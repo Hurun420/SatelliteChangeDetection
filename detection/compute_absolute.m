@@ -1,9 +1,10 @@
-function result = compute_absolute(imgs)
+function result = compute_absolute(imgs, options)
 
     num_imgs = numel(imgs);
     % initialize the outputs
     result.mask = cell(num_imgs-1,1);
-    result.visual = cell(num_imgs-1,1);
+    result.visual_gray = cell(num_imgs-1,1);
+    result.visual_rgb = cell(num_imgs-1,1);
     % result.data = ?
     
     % iterate through the images
@@ -13,31 +14,53 @@ function result = compute_absolute(imgs)
     
         % Convert to grayscale if needed
         if size(img1, 3) == 3
-            img1 = rgb2gray(img1);
+            img1_gray = rgb2gray(img1);
+        else
+            img1_gray = img1;
         end
         if size(img2,3) == 3
-            img2 = rgb2gray(img2);
-        end
+            img2_gray = rgb2gray(img2);
+        else
+            img2_gray = img2;
+        end 
     
         % Compute the absolute difference
-        %diff = imabsdiff(img1, img2);
-        diff = abs(double(img1)-double(img2));
+        diff = imabsdiff(img1_gray, img2_gray);
+        %diff = abs(double(img1)-double(img2));
     
         % Normalize and threshold
-        % diff_norm = mat2gray(diff);
-        diff_norm = (diff - min(diff(:))) / (max(diff(:)) - min(diff(:)));
-        threshold = 0.2;
+        diff_norm = mat2gray(diff);
+        %diff_norm = (diff - min(diff(:))) / (max(diff(:)) - min(diff(:)));
+        threshold = options.abs_threshold;
         mask = diff_norm > threshold;
+
+        % removing noise
+        mask = bwareaopen(mask, 50); % removes regions smaller than 50 pixels
+        se = strel('disk',2);
+        mask = imclose(mask, se); % remove small holes in change regions
+        mask = imdilate(mask, se); % smooth edges
+        mask = imerode(mask, se);
     
         result.mask{i} = mask;
     
-        % create red overlay
-        orig_rgb = im2double(repmat(img1, 1,1,3));
-        overlay = orig_rgb;
-        overlay(:,:,1) = overlay(:,:,1) + 0.8 * mask; % red
-        overlay = min(overlay,1);
+        % create red overlay on the grascale image
+        orig_gray = im2double(repmat(img1_gray, 1,1,3));
+        overlay_gray = orig_gray;
+        overlay_gray(:,:,1) = overlay_gray(:,:,1) + 0.6 * mask; % red
+        overlay_gray = min(overlay_gray,1);
     
-        result.visual{i} = overlay;
+        result.visual_gray{i} = overlay_gray;
+
+        % RGB overlay
+        if size(img1,3) == 1
+            result.visual_rgb{i} = gray_overlay;
+        else
+           orig_rgb = im2double(img1);
+           rgb_overlay = orig_rgb;
+           rgb_overlay(:,:,1) = rgb_overlay(:,:,1) + 0.6 * mask;
+           rgb_overlay = min(rgb_overlay,1);
+           result.visual_rgb{i} = rgb_overlay;
+        end
         
     end 
 
