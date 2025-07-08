@@ -1,4 +1,4 @@
-function result = detect_changes(imgs, mode)
+function result = detect_changes(imgs, mode, options)
 % DETECT_CHANGES Detect, analyze, and visualize (based on the specified 
 % analysis mode) the changes between two or more preprocessed (aligned and 
 % brightness/contrast normalized) images.
@@ -19,6 +19,8 @@ function result = detect_changes(imgs, mode)
 %           size.
 %       - 'landuse' : classifies types of regional change like urban
 %           expansion, vegetation loss.
+%   options: Struct containing additional options / user-specified params:
+%       - 'abs_threshold' : threshold value for absolute difference
 %
 % Output:
 %   result : Struct containing analysis outputs depending on mode:
@@ -29,8 +31,15 @@ function result = detect_changes(imgs, mode)
 %           intensity/speed.
 %       - result.data : additional info, change percentages, etc.
 
-    if nargin < 2
+    if nargin < 2 || isempty(mode)
         mode = 'absolute';
+    end
+    if nargin < 3 || isempty(options)
+        options = struct();  % Empty struct if none provided
+    end
+
+    if ~isfield(options, 'abs_threshold')
+        options.abs_threshold = 0.2;
     end
 
     num_imgs = numel(imgs); 
@@ -40,7 +49,7 @@ function result = detect_changes(imgs, mode)
 
     switch lower(mode)
         case 'absolute'
-            result = compute_absolute(imgs);
+            result = compute_absolute(imgs, options);
 
         case 'speed'
             result = compute_speed(imgs);
