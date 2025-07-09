@@ -1,0 +1,4 @@
+# Ignore all image data folders
+Data/
+# Ignore output folders for aligned images and detection results
+/output/
