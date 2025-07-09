@@ -1,65 +1,71 @@
 function [alignedImages, transformParams] = register_images(folderPath, imageList)
-    numImages = length(imageList);
-    alignedImages = cell(1, numImages);
-    transformParams = cell(1, numImages);
+% REGISTER_IMAGES: Aligns images using Harris and SURF features
+% and saves outputs (.png and .mat) in designated folders.
 
-    % Read and convert to grayscale as the global reference image
-    refImage = imread(fullfile(folderPath, imageList{1}));
-    refImageGray = rgb2gray(refImage);
-    alignedImages{1} = refImageGray;
-    transformParams{1} = affine2d(eye(3));
-    
-    % Extract Harris feature points from the reference image
-    pts_ref = harris_detector(refImageGray, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
+% Default output folders
+outputImageFolder = 'output/match_figures';
+outputMatFolder = 'output/match_data';
 
-    for i = 2:numImages
-        fprintf("⚙️ Registering image %d / %d: %s\n", i, numImages, imageList{i});
-        curImage = imread(fullfile(folderPath, imageList{i}));
-        curImageGray = rgb2gray(curImage);
+% Create directories if not exist
+if ~exist(outputImageFolder, 'dir')
+    mkdir(outputImageFolder);
+end
+if ~exist(outputMatFolder, 'dir')
+    mkdir(outputMatFolder);
+end
 
-        % Detect feature points in the current image
-        pts_cur = harris_detector(curImageGray, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
+% Initialization
+numImages = length(imageList);
+alignedImages = cell(1, numImages);
+transformParams = cell(1, numImages);
 
-        % First, attempt to match with the first image
-        matches = point_correspondence(refImageGray, curImageGray, pts_ref, pts_cur, ...
-            'window_length', 21, 'min_corr', 0.85, 'do_plot', false);
-        if isempty(matches) || size(matches, 2) < 3
-            fprintf("[BACK] Primary match failed. Trying fallback (previous aligned)...\n");
-            % Search for the most recently successfully aligned image
-            fallback_idx = find(~cellfun(@isempty, alignedImages(1:i-1)), 1, 'last');
-            if isempty(fallback_idx) || fallback_idx == i
-                warning("⚠️ No fallback reference available. Skipping image %s.", imageList{i});
-                alignedImages{i} = [];
-                transformParams{i} = [];
-                continue;
-            end
-            fallbackImage = alignedImages{fallback_idx};
-            pts_fallback = harris_detector(fallbackImage, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
-            matches = point_correspondence(fallbackImage, curImageGray, pts_fallback, pts_cur, ...
-                'window_length', 21, 'min_corr', 0.85, 'do_plot', false);
-            if isempty(matches) || size(matches, 2) < 3
-                warning("⚠ Fallback match also failed for image %s. Skipping.", imageList{i});
-                alignedImages{i} = [];
-                transformParams{i} = [];
-                continue;
-            end
-        end
+% Load and convert the reference image
+refImage = imread(fullfile(folderPath, imageList{1}));
+refGray = im2gray(refImage);
+alignedImages{1} = refGray;
+transformParams{1} = affine2d(eye(3));
 
-        fprintf("🔍 Max NCC: %.4f | Matches above threshold: %d\n", max(matches(1,:) ~= 0), size(matches,2));
-        fprintf("✔ %d matches used\n", size(matches,2));
+% Harris keypoints for reference
+pts_ref = detectHarrisFeatures(refGray);
 
-        fixedPoints = matches(1:2, :)';
-        movingPoints = matches(3:4, :)';
+fprintf("\n Registering %d images\n", numImages);
 
-        try
-            tform = fitgeotrans(movingPoints, fixedPoints, 'affine');
-            aligned = imwarp(curImageGray, tform, 'OutputView', imref2d(size(refImageGray)));
-            alignedImages{i} = aligned;
-            transformParams{i} = tform;
-        catch ME
-            warning("× fitgeotrans failed on image %s: %s", imageList{i}, ME.message);
-            alignedImages{i} = [];
-            transformParams{i} = [];
-        end
+for i = 2:numImages
+    currName = imageList{i};
+    currPath = fullfile(folderPath, currName);
+    img = imread(currPath);
+    imgGray = im2gray(img);
+
+    % Harris keypoints for current image
+    pts_img = detectHarrisFeatures(imgGray);
+    fprintf("\n Registering image %d / %d: %s\n", i, numImages, currName);
+    fprintf("Harris: %d points in reference | %d in current.\n", pts_ref.Count, pts_img.Count);
+
+    % SURF-based matching (Computer Vision Toolbox)
+    [cor, matchedCount] = match_features_cv(refGray, imgGray, pts_ref.Location', pts_img.Location');
+    fprintf("Matched %d SURF feature pairs.\n", matchedCount);
+
+    % Estimate transformation
+    if matchedCount >= 3
+        tform = fitgeotrans(cor(3:4,:)', cor(1:2,:)', 'affine');
+        registered = imwarp(imgGray, tform, 'OutputView', imref2d(size(refGray)));
+        alignedImages{i} = registered;
+        transformParams{i} = tform;
+
+        % Save visual overlay (colored matches)
+        saveName = sprintf('%s_matches.png', currName(1:end-4));
+        savePath = fullfile(outputImageFolder, saveName);
+        plot_matches(refGray, imgGray, cor(1:2,:), cor(3:4,:), savePath);
+
+        % Save .mat with point correspondences
+        matName = sprintf('%s_points.mat', currName(1:end-4));
+        save(fullfile(outputMatFolder, matName), 'cor');
+
+        fprintf("Aligned image %d / %d successfully.\n", i, numImages);
+    else
+        warning("Not enough matches to estimate transform for image %s", currName);
+        alignedImages{i} = imgGray;
+        transformParams{i} = affine2d(eye(3));
     end
+end
 end

@@ -1,4 +1,4 @@
-function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
+function [matchedPoints1, matchedPoints2, cor, max_ncc] = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
     parser = inputParser;
     addParameter(parser, 'window_length', 25, @(x) isnumeric(x) && mod(x,2)==1);
     addParameter(parser, 'min_corr', 0.85, @(x) isnumeric(x) && x > 0 && x <= 1);
@@ -13,7 +13,6 @@ function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
     I1 = double(I1);
     I2 = double(I2);
 
-    % Relax edge constraints to avoid excessive point filtering
     valid1 = (Ftp1(1,:) >= hwin+1) & (Ftp1(1,:) <= size(I1,2)-hwin-1) & ...
              (Ftp1(2,:) >= hwin+1) & (Ftp1(2,:) <= size(I1,1)-hwin-1);
     valid2 = (Ftp2(1,:) >= hwin+1) & (Ftp2(1,:) <= size(I2,2)-hwin-1) & ...
@@ -25,7 +24,10 @@ function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
     num2 = size(validFtp2,2);
 
     if num1 == 0 || num2 == 0
+        matchedPoints1 = [];
+        matchedPoints2 = [];
         cor = [];
+        max_ncc = 0;
         return;
     end
 
@@ -53,16 +55,19 @@ function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
     NCC_matrix = Mat_feat_2' * Mat_feat_1;
     NCC_matrix(NCC_matrix < min_corr) = 0;
 
-    % Debug output: maximum matching value
-    fprintf("🔍 Max NCC: %.4f | Matches above threshold: %d\n", ...
-        max(NCC_matrix(:)), nnz(NCC_matrix >= min_corr));
+    max_ncc = max(NCC_matrix(:));
+    fprintf("\x1b[36m🔍 Max NCC: %.4f | Matches above threshold: %d\x1b[0m\n", ...
+        max_ncc, nnz(NCC_matrix >= min_corr));
 
     [rows, cols, vals] = find(NCC_matrix);
     [~, idx] = sort(vals, 'descend');
     rows = rows(idx);
     cols = cols(idx);
+    vals = vals(idx);
 
     cor = [];
+    matchedPoints1 = [];
+    matchedPoints2 = [];
     used1 = false(1, num1);
     used2 = false(1, num2);
 
@@ -70,6 +75,8 @@ function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
         i1 = cols(i); i2 = rows(i);
         if ~used1(i1) && ~used2(i2)
             cor = [cor, [validFtp1(:,i1); validFtp2(:,i2)]];
+            matchedPoints1 = [matchedPoints1, validFtp1(:,i1)];
+            matchedPoints2 = [matchedPoints2, validFtp2(:,i2)];
             used1(i1) = true;
             used2(i2) = true;
         end
@@ -79,15 +86,15 @@ function cor = point_correspondence(I1, I2, Ftp1, Ftp2, varargin)
     end
 
     if size(cor,2) < 3
+        matchedPoints1 = [];
+        matchedPoints2 = [];
         cor = [];
+        max_ncc = 0;
         return;
     end
 
-    % Remove zero-padding logic to avoid interfering with subsequent processing
-
-    % Visualize matched point pairs
     if do_plot && ~isempty(cor)
-        im_overlay = 0.5 * double(I1) + 0.5 * double(I2);
+        im_overlay = cat(3, I1 / max(I1(:)), I2 / max(I2(:)), zeros(size(I1)));
         figure; imshow(im_overlay, []); hold on;
         for i = 1:size(cor,2)
             plot(cor(1,i), cor(2,i), 'ro');

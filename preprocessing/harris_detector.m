@@ -1,77 +1,89 @@
-function [features] = harris_detector(input_image, varargin)
-    % HARRIS_DETECTOR - Detect Harris corners with robustness against empty outputs
-    % Features returned as [x; y] with max_features limit
+function [points] = harris_detector(img, varargin)
+    % HARRIS_DETECTOR  Detect Harris corners in a grayscale image.
+    % Parameters (set via name-value pairs):
+    %   tau               - Threshold for corner response (default: 1e5)
+    %   segment_length    - Size of the window (default: 15)
+    %   k                 - Harris detector parameter (default: 0.05)
+    %   do_plot           - Show image with detected corners (default: false)
+    %   max_features      - Maximum number of points (default: 500)
+    %   margin            - Border margin to avoid (default: 10)
+    %   auto_adjust_tau   - Enable auto lowering tau (default: true)
 
-    % Argument parsing
+    % Parse input
     p = inputParser;
-    addParameter(p, 'segment_length', 15, @(x) isnumeric(x) && mod(x,2)==1);
-    addParameter(p, 'k', 0.05, @(x) isnumeric(x) && x >= 0 && x <= 1);
-    addParameter(p, 'tau', 1e5, @(x) isnumeric(x) && x > 0);
-    addParameter(p, 'do_plot', false, @(x) islogical(x));
-    addParameter(p, 'max_features', 500, @(x) isnumeric(x) && x > 0);
-    addParameter(p, 'auto_adjust_tau', true, @(x) islogical(x));
+    addParameter(p, 'tau', 1e5);
+    addParameter(p, 'segment_length', 15);
+    addParameter(p, 'k', 0.05);
+    addParameter(p, 'do_plot', false);
+    addParameter(p, 'max_features', 500);
+    addParameter(p, 'margin', 10);
+    addParameter(p, 'auto_adjust_tau', true);
     parse(p, varargin{:});
 
+    tau = p.Results.tau;
     segment_length = p.Results.segment_length;
     k = p.Results.k;
-    tau = p.Results.tau;
     do_plot = p.Results.do_plot;
     max_features = p.Results.max_features;
+    margin = p.Results.margin;
     auto_adjust = p.Results.auto_adjust_tau;
 
-    % Convert image to double
-    input_image = double(input_image);
-    
-    % Compute gradients
-    sobel_x = [-1 0 1; -2 0 2; -1 0 1];
-    sobel_y = sobel_x';
-    Ix = conv2(input_image, sobel_x, 'same');
-    Iy = conv2(input_image, sobel_y, 'same');
+    % Convert to double if needed
+    img = double(img);
 
-    % Compute structure tensor components
-    sigma = (segment_length - 1) / 6;
-    w = fspecial('gaussian', [segment_length, segment_length], sigma);
-    G11 = conv2(Ix.^2, w, 'same');
-    G22 = conv2(Iy.^2, w, 'same');
-    G12 = conv2(Ix.*Iy, w, 'same');
+    % Gaussian filter
+    sigma = segment_length / 5;
+    g = fspecial('gaussian', [segment_length, segment_length], sigma);
+    [Ix, Iy] = gradient(img);
+    Ix2 = conv2(Ix.^2, g, 'same');
+    Iy2 = conv2(Iy.^2, g, 'same');
+    Ixy = conv2(Ix.*Iy, g, 'same');
 
-    % Compute Harris response
-    H = G11 .* G22 - G12.^2 - k * (G11 + G22).^2;
+    % Harris response
+    H = (Ix2 .* Iy2 - Ixy.^2) - k * (Ix2 + Iy2).^2;
 
-    % Suppress border
-    margin = ceil(segment_length / 2);
-    H(1:margin,:) = 0; H(end-margin+1:end,:) = 0;
-    H(:,1:margin) = 0; H(:,end-margin+1:end) = 0;
+    % Normalize
+    H = H / max(H(:));
 
-    % Detect corners (with auto adjustment of tau if needed)
-    max_try = 10;
-    try_count = 0;
-    while try_count < max_try
-        corners = H > tau;
-        [y, x] = find(corners);
-        responses = H(sub2ind(size(H), y, x));
+    % Try to adapt tau until features found
+    min_features = 50;
+    tau_min = 1e-6;
+    scale = 0.5;
+    found = false;
+    H_mask = (H > tau);
 
-        if length(x) >= 10 || ~auto_adjust
-            break;
-        end
-        tau = tau * 0.5;
-        try_count = try_count + 1;
+    while auto_adjust && sum(H_mask(:)) < min_features && tau > tau_min
+        tau = tau * scale;
+        H_mask = (H > tau);
     end
 
-    [~, sorted_idx] = sort(responses, 'descend');
-    keep_n = min(max_features, length(sorted_idx));
-    if keep_n == 0
-        warning('⚠️ Harris detector found 0 features after thresholding.');
-        features = zeros(2, 0);
+    if sum(H_mask(:)) == 0
+        warning('Harris detector found 0 features after thresholding (tau=%.2e)', tau);
+        points = zeros(0, 2);
         return;
     end
-    selected_idx = sorted_idx(1:keep_n);
 
-    features = [x(selected_idx)'; y(selected_idx)'];
+    % Get coordinates
+    [y, x] = find(H_mask);
+    scores = H(H_mask);
+    points = [x, y, scores];
 
+    % Exclude margin area
+    valid = x > margin & x < size(img,2)-margin & ...
+            y > margin & y < size(img,1)-margin;
+    points = points(valid, :);
+
+    % Sort and pick top responses
+    points = sortrows(points, -3);  % Descending by response
+    points = points(1:min(end, max_features), :);
+
+    % Final output
+    points = points(:, 1:2);  % remove scores
+
+    % Plot
     if do_plot
-        figure; imshow(input_image, []); hold on;
-        plot(x(selected_idx), y(selected_idx), 'r+');
-        title('Harris Corners'); hold off;
+        figure; imshow(uint8(img)); hold on;
+        plot(points(:,1), points(:,2), 'r+');
+        title(sprintf('Harris Points (tau=%.1e, %d points)', tau, size(points,1)));
     end
 end
