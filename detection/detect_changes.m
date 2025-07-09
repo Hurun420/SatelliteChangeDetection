@@ -25,8 +25,10 @@ function result = detect_changes(imgs, mode, options)
 % Output:
 %   result : Struct containing analysis outputs depending on mode:
 %       - result.mask : mask of change regions.
-%       - result.visual: image (or cell array of images) with overlay
-%           visualization.
+%       - result.visual_gray: original gray_scale image (or cell array of 
+%           images) with overlay visualization.
+%       - result.visual_rgb: original image (or cell array of images) with
+%           overlay visualization.
 %       - result.heatmap : (for 'speed' mode), image showing change 
 %           intensity/speed.
 %       - result.data : additional info, change percentages, etc.

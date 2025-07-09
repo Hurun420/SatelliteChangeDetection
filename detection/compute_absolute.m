@@ -1,4 +1,20 @@
 function result = compute_absolute(imgs, options)
+% COMPUTE_ABSOLUTE given an array of images compute the difference masks 
+% between them. 
+%
+% Input Arguments:
+%   imgs: cell array of images {img1, img2, ..., imgN}
+%
+%   options: struct containing additional options:
+%       - 'abs_threshold' : threshold value for the absolute difference 
+%
+% Output:
+%   result: Struct containing
+%       - result.mask : array of computed difference masks (N-1 cells)
+%       - result.visual_gray: original gray_scale image (or cell array of 
+%           images) with overlay visualization.
+%       - result.visual_rgb: original image (or cell array of images) with
+%           overlay visualization.
 
     num_imgs = numel(imgs);
     % initialize the outputs
