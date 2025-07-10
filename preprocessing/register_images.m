@@ -1,71 +1,75 @@
 function [alignedImages, transformParams] = register_images(folderPath, imageList)
-% REGISTER_IMAGES: Aligns images using Harris and SURF features
-% and saves outputs (.png and .mat) in designated folders.
+% REGISTER_IMAGES robustly aligns a sequence of satellite images using Harris + SURF + RANSAC,
+% and saves the aligned images, visual comparisons, and correspondence data.
 
-% Default output folders
+% Output folders
 outputImageFolder = 'output/match_figures';
 outputMatFolder = 'output/match_data';
+if ~exist(outputImageFolder, 'dir'), mkdir(outputImageFolder); end
+if ~exist(outputMatFolder, 'dir'), mkdir(outputMatFolder); end
 
-% Create directories if not exist
-if ~exist(outputImageFolder, 'dir')
-    mkdir(outputImageFolder);
-end
-if ~exist(outputMatFolder, 'dir')
-    mkdir(outputMatFolder);
-end
-
-% Initialization
+% Initialize
 numImages = length(imageList);
 alignedImages = cell(1, numImages);
 transformParams = cell(1, numImages);
 
-% Load and convert the reference image
+% Load reference image (first image)
 refImage = imread(fullfile(folderPath, imageList{1}));
 refGray = im2gray(refImage);
 alignedImages{1} = refGray;
 transformParams{1} = affine2d(eye(3));
 
-% Harris keypoints for reference
+% Detect Harris features in reference
 pts_ref = detectHarrisFeatures(refGray);
 
-fprintf("\n Registering %d images\n", numImages);
+fprintf("\n⚙️ Registering %d images\n", numImages);
 
 for i = 2:numImages
     currName = imageList{i};
     currPath = fullfile(folderPath, currName);
     img = imread(currPath);
     imgGray = im2gray(img);
-
-    % Harris keypoints for current image
     pts_img = detectHarrisFeatures(imgGray);
-    fprintf("\n Registering image %d / %d: %s\n", i, numImages, currName);
-    fprintf("Harris: %d points in reference | %d in current.\n", pts_ref.Count, pts_img.Count);
 
-    % SURF-based matching (Computer Vision Toolbox)
+    fprintf("\n⚙️ Registering image %d / %d: %s\n", i, numImages, currName);
+    fprintf("🔧 Harris: %d points in reference | %d in current.\n", ...
+        pts_ref.Count, pts_img.Count);
+
+    % Match using SURF descriptors
     [cor, matchedCount] = match_features_cv(refGray, imgGray, pts_ref.Location', pts_img.Location');
-    fprintf("Matched %d SURF feature pairs.\n", matchedCount);
+    fprintf("🔍 Matched %d SURF feature pairs.\n", matchedCount);
 
-    % Estimate transformation
-    if matchedCount >= 3
-        tform = fitgeotrans(cor(3:4,:)', cor(1:2,:)', 'affine');
-        registered = imwarp(imgGray, tform, 'OutputView', imref2d(size(refGray)));
-        alignedImages{i} = registered;
-        transformParams{i} = tform;
+    if matchedCount >= 10
+        try
+            % === Robust estimation using RANSAC ===
+            [tform, inlierIdx] = estimateGeometricTransform2D( ...
+                cor(3:4,:)', cor(1:2,:)', 'affine', ...
+                'MaxNumTrials', 2000, 'Confidence', 99.9, 'MaxDistance', 3);
 
-        % Save visual overlay (colored matches)
-        saveName = sprintf('%s_matches.png', currName(1:end-4));
-        savePath = fullfile(outputImageFolder, saveName);
-        plot_matches(refGray, imgGray, cor(1:2,:), cor(3:4,:), savePath);
+            cor = cor(:, inlierIdx);  % Keep inliers only
+            refFrame = imref2d(size(refGray));
 
-        % Save .mat with point correspondences
-        matName = sprintf('%s_points.mat', currName(1:end-4));
-        save(fullfile(outputMatFolder, matName), 'cor');
+            % Warp image
+            registered = imwarp(imgGray, tform, ...
+                'OutputView', refFrame, 'FillValues', 0);
 
-        fprintf("Aligned image %d / %d successfully.\n", i, numImages);
+            % Save result
+            alignedImages{i} = registered;
+            transformParams{i} = tform;
+
+            % Save visuals
+            save_registration_outputs(refGray, imgGray, registered, cor, currName, outputImageFolder, outputMatFolder);
+
+            fprintf("✅ Aligned image %d / %d successfully.\n", i, numImages);
+        catch ME
+            warning("❌ Failed to estimate transform for %s: %s", currName, ME.message);
+            alignedImages{i} = [];
+            transformParams{i} = [];
+        end
     else
-        warning("Not enough matches to estimate transform for image %s", currName);
-        alignedImages{i} = imgGray;
-        transformParams{i} = affine2d(eye(3));
+        warning("⚠️ Not enough matches for image %s. Skipping.", currName);
+        alignedImages{i} = [];
+        transformParams{i} = [];
     end
 end
 end
