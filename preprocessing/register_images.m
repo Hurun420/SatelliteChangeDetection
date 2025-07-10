@@ -45,7 +45,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
 
         % Estimate transform
         try
-            tform = estimateGeometricTransform2D(matchedCurr, matchedRef, 'similarity');
+            tform = estgeotform2d(matchedCurr, matchedRef, 'similarity', 'MaxDistance', 5, 'Confidence', 99,'MaxNumTrials', 5000);
         catch
             warning('⚠️  Transformation failed for %s. Keeping original image.', imageList{i});
             alignedImagesGray{i} = currGrayEq;
