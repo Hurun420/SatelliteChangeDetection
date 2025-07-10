@@ -45,7 +45,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
 
         % Estimate transform
         try
-            tform = estgeotform2d(matchedCurr, matchedRef, 'similarity', 'MaxDistance', 5, 'Confidence', 99,'MaxNumTrials', 5000);
+            tform = estgeotform2d(matchedCurr, matchedRef, 'similarity', 'MaxDistance', 5, 'Confidence', 99,'MaxNumTrials', 5000); % Ransac does not get Geometry right for some Rainforest/Frauenkirche images
         catch
             warning('⚠️  Transformation failed for %s. Keeping original image.', imageList{i});
             alignedImagesGray{i} = currGrayEq;
