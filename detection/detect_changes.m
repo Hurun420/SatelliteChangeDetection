@@ -6,6 +6,9 @@ function result = detect_changes(imgs, mode, options)
 % Input Arguments:
 %   imgs : cell array of images (e.g., {img1, img2, ...}), sorted by time.
 %       Images must be pre-aligned and of the same size.
+%       ⚠️ NOTE: Indexed images ([img, map] = imread(...)) must be
+%       converted using ind2rgb(img, map) **before** being passed to the
+%       function.
 %   
 %   mode : (String) specifies the type of change analysis to perform:
 %       - 'absolute' : detects pixel-wise changes between pairs of images.
