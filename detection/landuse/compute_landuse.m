@@ -1,4 +1,4 @@
-% function text = compute_landuse(alignedImagesRGB)
+function text = compute_landuse(alignedImagesRGB)
 
 img1 = alignedImagesRGB{3};
 img2 = alignedImagesRGB{4};
