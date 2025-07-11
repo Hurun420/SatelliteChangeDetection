@@ -13,15 +13,15 @@ function result = detect_changes(imgs, mode, options)
 %   mode : (String) specifies the type of change analysis to perform:
 %       - 'absolute' : detects pixel-wise changes between pairs of images.
 %           returns masks highlithing changed areas and visual
-%           overlays (e.g. red mask on orignal image)
+%           overlays (red mask on orignal image)
 %       - 'speed' : for a sequence of images, estimates per-pixel speed of
 %           change (how fast a region changes over time), and returns a 
-%           a heatmap or series of visualizations (that can be later 
+%           a a series of visualizations with a heatmap overlaid (can be later 
 %           used to make a timelapse).
 %       - 'size': identify changed regions and color code them based on
-%           size.
+%           size. (TODO)
 %       - 'landuse' : classifies types of regional change like urban
-%           expansion, vegetation loss.
+%           expansion, vegetation loss. (TODO)
 %   options: Struct containing additional options / user-specified params:
 %       - 'abs_threshold' : threshold value for absolute difference
 %
@@ -32,9 +32,12 @@ function result = detect_changes(imgs, mode, options)
 %           images) with overlay visualization.
 %       - result.visual_rgb: original image (or cell array of images) with
 %           overlay visualization.
-%       - result.heatmap : (for 'speed' mode), image showing change 
-%           intensity/speed.
-%       - result.data : additional info, change percentages, etc.
+%       - result.data : additional info, change percentages, etc. (TODO)
+%       In 'speed' mode:
+%       - result.colormap : colormap used for the heat maps.
+%       - result.speedrange : speed values range.
+%       - result.label : label for the legend 
+%       - result.legend_img : rendered legend as an image.
 
     if nargin < 2 || isempty(mode)
         mode = 'absolute';
