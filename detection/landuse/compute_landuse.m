@@ -1,4 +1,4 @@
-function text = compute_landuse(alignedImagesRGB)
+function result = compute_landuse(alignedImagesRGB)
 
 img1 = alignedImagesRGB{3};
 img2 = alignedImagesRGB{4};
@@ -37,12 +37,12 @@ if ~isempty(all_changes)
     [uni, ~, idx] = unique(all_changes);
     number = accumarray(idx(:), 1);
     [~, maxIdx] = max(number);
-    text = uni{maxIdx};
+    result.text = uni{maxIdx};
 
     % fprintf("Most frequent change in the image: %s\n", text); 
 else
     % fprintf("No changes in the image.\n"); 
-    text = 'No changes.';
+    result.text = 'No changes.';
 end
 
 % fprintf("\nAnalysis done.\n");
