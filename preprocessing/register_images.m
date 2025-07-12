@@ -1,75 +1,69 @@
-function [alignedImages, transformParams] = register_images(folderPath, imageList)
-    numImages = length(imageList);
-    alignedImages = cell(1, numImages);
-    transformParams = cell(1, numImages);
+function [alignedImagesGray, alignedImagesRGB, transformParams] = register_images(folderPath, imageList)
+% REGISTER_IMAGES_POL
+% Registers all images in imageList (within folderPath) to the first image as reference.
+%
+% Inputs:
+%   folderPath: string, path to the folder containing the images
+%   imageList:  cell array of image file names (e.g. {'2020 01.jpg', '2023 04.jpg'})
+%
+% Outputs:
+%   alignedImagesGray: grayscale aligned versions of the images
+%   alignedImagesRGB:  color (RGB) aligned versions
+%   transformParams:   transformation objects used for each image
 
-    % Read and convert to grayscale as the global reference image
-    refImage = imread(fullfile(folderPath, imageList{1}));
-    if size(refImage,3) == 3
-        refImageGray = rgb2gray(refImage);
-    else
-        refImageGray = refImage;
+% Read and preprocess reference image
+refRGB = im2double(imread(fullfile(folderPath, imageList{1})));
+refGray = rgb2gray(refRGB);
+refGrayEq = adapthisteq(refGray);
+
+numImages = numel(imageList);
+alignedImagesGray = cell(1, numImages);
+alignedImagesRGB  = cell(1, numImages);
+transformParams   = cell(1, numImages);
+
+% Store reference image directly
+alignedImagesGray{1} = refGrayEq;
+alignedImagesRGB{1}  = refRGB;
+transformParams{1}   = affine2d(eye(3));  % Identity transform
+
+for i = 2:numImages
+    % Read current image
+    currRGB = im2double(imread(fullfile(folderPath, imageList{i})));
+    currGray = rgb2gray(currRGB);
+    currGrayEq = adapthisteq(currGray);
+
+    % Detect SURF features
+    pointsRef = detectSURFFeatures(refGrayEq);
+    pointsCurr = detectSURFFeatures(currGrayEq);
+
+    [featuresRef, validPtsRef] = extractFeatures(refGrayEq, pointsRef);
+    [featuresCurr, validPtsCurr] = extractFeatures(currGrayEq, pointsCurr);
+
+    indexPairs = matchFeatures(featuresRef, featuresCurr, 'Unique', true);
+    matchedRef = validPtsRef(indexPairs(:, 1));
+    matchedCurr = validPtsCurr(indexPairs(:, 2));
+
+    % Estimate transform
+    try
+        tform = estgeotform2d(matchedCurr, matchedRef, 'similarity', 'MaxDistance', 5, 'Confidence', 99,'MaxNumTrials', 5000); % Ransac does not get Geometry right for some Rainforest/Frauenkirche images
+    catch
+        warning('⚠️  Transformation failed for %s. Keeping original image.', imageList{i});
+        alignedImagesGray{i} = currGrayEq;
+        alignedImagesRGB{i}  = currRGB;
+        transformParams{i}   = [];
+        continue;
     end
 
-    alignedImages{1} = refImageGray;
-    transformParams{1} = affine2d(eye(3));
-    
-    % Extract Harris feature points from the reference image
-    pts_ref = harris_detector(refImageGray, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
+    % Apply transform to grayscale
+    outputView = imref2d(size(refGrayEq));
+    alignedGray = imwarp(currGrayEq, tform, 'OutputView', outputView);
+    alignedImagesGray{i} = alignedGray;
 
-    for i = 2:numImages
-        fprintf("⚙️ Registering image %d / %d: %s\n", i, numImages, imageList{i});
-        curImage = imread(fullfile(folderPath, imageList{i}));
-        if size(curImage,3) == 3
-            curImageGray = rgb2gray(curImage);
-        else
-            curImageGray = curImage;
-        end
+    % Apply same transform to RGB
+    alignedRGB = imwarp(currRGB, tform, 'OutputView', outputView);
+    alignedImagesRGB{i} = alignedRGB;
 
-
-        % Detect feature points in the current image
-        pts_cur = harris_detector(curImageGray, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
-
-        % First, attempt to match with the first image
-        matches = point_correspondence(refImageGray, curImageGray, pts_ref, pts_cur, ...
-            'window_length', 21, 'min_corr', 0.85, 'do_plot', false);
-        if isempty(matches) || size(matches, 2) < 3
-            fprintf("[BACK] Primary match failed. Trying fallback (previous aligned)...\n");
-            % Search for the most recently successfully aligned image
-            fallback_idx = find(~cellfun(@isempty, alignedImages(1:i-1)), 1, 'last');
-            if isempty(fallback_idx) || fallback_idx == i
-                warning("⚠️ No fallback reference available. Skipping image %s.", imageList{i});
-                alignedImages{i} = [];
-                transformParams{i} = [];
-                continue;
-            end
-            fallbackImage = alignedImages{fallback_idx};
-            pts_fallback = harris_detector(fallbackImage, 'tau', 1e5, 'do_plot', false, 'segment_length', 15, 'max_features', 500, 'auto_adjust_tau', true);
-            matches = point_correspondence(fallbackImage, curImageGray, pts_fallback, pts_cur, ...
-                'window_length', 21, 'min_corr', 0.85, 'do_plot', false);
-            if isempty(matches) || size(matches, 2) < 3
-                warning("⚠ Fallback match also failed for image %s. Skipping.", imageList{i});
-                alignedImages{i} = [];
-                transformParams{i} = [];
-                continue;
-            end
-        end
-
-        fprintf("🔍 Max NCC: %.4f | Matches above threshold: %d\n", max(matches(1,:) ~= 0), size(matches,2));
-        fprintf("✔ %d matches used\n", size(matches,2));
-
-        fixedPoints = matches(1:2, :)';
-        movingPoints = matches(3:4, :)';
-
-        try
-            tform = fitgeotrans(movingPoints, fixedPoints, 'affine');
-            aligned = imwarp(curImageGray, tform, 'OutputView', imref2d(size(refImageGray)));
-            alignedImages{i} = aligned;
-            transformParams{i} = tform;
-        catch ME
-            warning("× fitgeotrans failed on image %s: %s", imageList{i}, ME.message);
-            alignedImages{i} = [];
-            transformParams{i} = [];
-        end
-    end
+    % Save transform
+    transformParams{i} = tform;
+end
 end
