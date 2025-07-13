@@ -3,6 +3,7 @@ function [typ,data] = classification_landuse(patch)
     % image in double for calculations
     patch = im2double(patch);
 
+    % extract colours
     r = patch(:,:,1);
     g = patch(:,:,2);
     b = patch(:,:,3);
@@ -26,7 +27,7 @@ function [typ,data] = classification_landuse(patch)
     stats = graycoprops(glcm, {'Contrast','Homogeneity','Energy'});
 
 
-    % rules/conditions
+    % rules/conditions for classification
     if gruen_mean > 0.27 && gruen_mean > rot_mean && gruen_mean > blau_mean && helligkeit < 0.35 
         typ = 'Forest';
     %elseif blau_mean > 0.4 && helligkeit < 0.6
@@ -45,6 +46,7 @@ function [typ,data] = classification_landuse(patch)
         typ = 'Unknown';
     end
 
-    data = struct('Kantenanzahl', kanten_anzahl, 'grau_mean', grau_mean, 'blau', blau_mean, 'gruen', gruen_mean, 'rot', rot_mean, ...
+    % for testing
+    % data = struct('Kantenanzahl', kanten_anzahl, 'grau_mean', grau_mean, 'blau', blau_mean, 'gruen', gruen_mean, 'rot', rot_mean, ...
         'helligkeit', helligkeit, 'varianz', var, 'saturation', sat, 'glcm', glcm, 'entropy', ent, 'density', kanten_density);
 end
