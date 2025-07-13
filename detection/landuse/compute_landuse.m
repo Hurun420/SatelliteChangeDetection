@@ -5,7 +5,7 @@ function result = compute_landuse(alignedImagesRGB)
 %       Images must be pre-aligned and of the same size.
 %
 % Output:
-%   result.text: string output of the transformation
+%   result.text: string output of the transformation type
 
 % split in small image patches
 [H, W, ~] = size(img1);
