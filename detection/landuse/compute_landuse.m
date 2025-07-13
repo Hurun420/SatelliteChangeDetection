@@ -1,5 +1,12 @@
 function result = compute_landuse(alignedImagesRGB)
 
+% Input Arguments:
+%   alignedImagesRGB : cell array of images (e.g., {img1, img2, ...}), sorted by time.
+%       Images must be pre-aligned and of the same size.
+%
+% Output:
+%   result.text: string output of the transformation
+
 % split in small image patches
 [H, W, ~] = size(img1);
 tileSize = floor(H/10);  % Denominator splits the image in tiles
