@@ -1,3 +1,4 @@
+% recognizing transformations when classification is different
 function ver = classification_change_landuse(von, nach)
     if strcmp(von, 'Forest') && strcmp(nach, 'City')
         ver = "Urbanization/Deforestation";
