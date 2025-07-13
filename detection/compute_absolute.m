@@ -1,8 +1,27 @@
 function result = compute_absolute(imgs, options)
+% COMPUTE_ABSOLUTE given an array of images compute the difference masks 
+% between them. 
+%
+% Input Arguments:
+%   imgs: cell array of images {img1, img2, ..., imgN}
+%
+%   options: struct containing additional options:
+%       - 'abs_threshold' : threshold value for the absolute difference 
+%
+% Output:
+%   result: Struct containing
+%       - result.mask : array of computed difference masks (N-1 cells)
+%       - result.imgs_gray : original images but gray scale (if needed for
+%           visualization purposes)
+%       - result.visual_gray : original gray_scale image (or cell array of 
+%           images) with overlay visualization.
+%       - result.visual_rgb: original image (or cell array of images) with
+%           overlay visualization.
 
     num_imgs = numel(imgs);
     % initialize the outputs
     result.mask = cell(num_imgs-1,1);
+    result.imgs_gray = cell(num_imgs, 1);
     result.visual_gray = cell(num_imgs-1,1);
     result.visual_rgb = cell(num_imgs-1,1);
     % result.data = ?
@@ -14,7 +33,7 @@ function result = compute_absolute(imgs, options)
     
         % Convert to grayscale if needed
         if size(img1, 3) == 3
-            img1_gray = rgb2gray(img1);
+            img1_gray = rgb2gray(img1); 
         else
             img1_gray = img1;
         end
@@ -45,6 +64,12 @@ function result = compute_absolute(imgs, options)
     
         % create red overlay on the grascale image
         orig_gray = im2double(repmat(img1_gray, 1,1,3));
+
+        result.imgs_gray{i} = orig_gray;
+        if i == num_imgs-1 
+            result.imgs_gray{i+1} = im2double(repmat(img2_gray, 1,1,3));
+        end
+
         overlay_gray = orig_gray;
         overlay_gray(:,:,1) = overlay_gray(:,:,1) + 0.6 * mask; % red
         overlay_gray = min(overlay_gray,1);
@@ -53,7 +78,7 @@ function result = compute_absolute(imgs, options)
 
         % RGB overlay
         if size(img1,3) == 1
-            result.visual_rgb{i} = gray_overlay;
+            result.visual_rgb{i} = overlay_gray;
         else
            orig_rgb = im2double(img1);
            rgb_overlay = orig_rgb;
