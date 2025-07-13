@@ -1,11 +1,8 @@
 function result = compute_landuse(alignedImagesRGB)
 
-img1 = alignedImagesRGB{3};
-img2 = alignedImagesRGB{4};
-
 % split in small image patches
 [H, W, ~] = size(img1);
-tileSize = floor(H/10);  %%% change nenner in GUI for precision 10 up to 50 maybe 75 %%%
+tileSize = floor(H/10);  % Denominator splits the image in tiles
 
 % Loop for tiles
 all_changes = {};
@@ -15,11 +12,11 @@ for y = 1:tileSize:H-tileSize+1
         patch1 = img1(y:y+tileSize-1, x:x+tileSize-1, :);
         patch2 = img2(y:y+tileSize-1, x:x+tileSize-1, :);
         
-        % analyse tiles
+        % classification of tiles
         [typ1, data1] = classification_landuse(patch1);
         [typ2, data2] = classification_landuse(patch2);
         
-        % detect changes
+        % detect and name transformation
         if ~strcmp(typ1, typ2)
             ver = classification_change_landuse(typ1, typ2);
             if ver ~= "none"
@@ -32,7 +29,7 @@ for y = 1:tileSize:H-tileSize+1
 
 end
 
-% Output of the most changes
+% Output issue of the most frequently occurring transformation
 if ~isempty(all_changes)
     [uni, ~, idx] = unique(all_changes);
     number = accumarray(idx(:), 1);
