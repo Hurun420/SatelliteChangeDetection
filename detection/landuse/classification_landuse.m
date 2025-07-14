@@ -13,17 +13,17 @@ function [typ,data] = classification_landuse(patch)
     blau_mean = mean(b(:),'all');
     rot_mean = mean(r(:),'all');
     grau_mean = mean(grau(:),'all');
-    helligkeit = mean(grau, 'all');
-    kanten = edge(grau, 'Canny');
-    kanten_anzahl = sum(kanten(:));
-    kanten_density = sum(kanten(:)) / numel(kanten);
-    var = std2(grau);
-    ent = entropy(grau);
+    helligkeit = mean(grau, 'all');    % brightness
+    kanten = edge(grau, 'Canny');    
+    kanten_anzahl = sum(kanten(:));    % number of edges
+    kanten_density = sum(kanten(:)) / numel(kanten);    % density of edges
+    var = std2(grau);    % variance
+    ent = entropy(grau);    % entropy
     HSV = rgb2hsv(patch);
-    sat = HSV(:,:,2);
-    sat = mean(sat(:),'all');
-    glcm = graycomatrix(grau, 'Offset', [0 1]);
-    stats = graycoprops(glcm, {'Contrast','Homogeneity','Energy'});
+    sat = HSV(:,:,2);    
+    sat = mean(sat(:),'all');    & saturation
+    glcm = graycomatrix(grau, 'Offset', [0 1]);    % Gray-Level Co-Occurrence Matrix
+    stats = graycoprops(glcm, {'Contrast','Homogeneity','Energy'}); 
 
 
     % rules/conditions
@@ -47,6 +47,7 @@ function [typ,data] = classification_landuse(patch)
         typ = 'Unknown';
     end
 
+    % For Testing
     data = struct('Kantenanzahl', kanten_anzahl, 'grau_mean', grau_mean, 'blau', blau_mean, 'gruen', gruen_mean, 'rot', rot_mean, ...
         'helligkeit', helligkeit, 'varianz', var, 'saturation', sat, 'glcm', glcm, 'entropy', ent, 'density', kanten_density);
 end
