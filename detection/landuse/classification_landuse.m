@@ -3,7 +3,6 @@ function [typ,data] = classification_landuse(patch)
     % image in double for calculations
     patch = im2double(patch);
 
-    % extract colours
     r = patch(:,:,1);
     g = patch(:,:,2);
     b = patch(:,:,3);
@@ -27,13 +26,15 @@ function [typ,data] = classification_landuse(patch)
     stats = graycoprops(glcm, {'Contrast','Homogeneity','Energy'});
 
 
-    % rules/conditions for classification
-    if gruen_mean > 0.27 && gruen_mean > rot_mean && gruen_mean > blau_mean && helligkeit < 0.35 
+    % rules/conditions
+    if gruen_mean > 0.26 && gruen_mean > rot_mean && gruen_mean > blau_mean && helligkeit < 0.35 
         typ = 'Forest';
     %elseif blau_mean > 0.4 && helligkeit < 0.6
         %typ = 'Fluss oder See';
-    elseif blau_mean > 0.3  && blau_mean > gruen_mean && blau_mean > rot_mean && ent < 4
+    elseif blau_mean > 0.3  && blau_mean > gruen_mean && blau_mean > rot_mean && ent < 4 
         typ = 'Sea or Waters';
+    % elseif blau_mean > 0.4  && blau_mean > rot_mean && ent < 4
+        % typ = 'Sea or Waters';    
     elseif helligkeit > 0.5 && blau_mean > gruen_mean && blau_mean > rot_mean
         typ = 'Glacier or Snow';
     elseif grau_mean > 0.3 && sat < 0.3 && kanten_density > 0.1 && blau_mean > 0.6
@@ -46,7 +47,6 @@ function [typ,data] = classification_landuse(patch)
         typ = 'Unknown';
     end
 
-    % for testing
-    % data = struct('Kantenanzahl', kanten_anzahl, 'grau_mean', grau_mean, 'blau', blau_mean, 'gruen', gruen_mean, 'rot', rot_mean, ...
+    data = struct('Kantenanzahl', kanten_anzahl, 'grau_mean', grau_mean, 'blau', blau_mean, 'gruen', gruen_mean, 'rot', rot_mean, ...
         'helligkeit', helligkeit, 'varianz', var, 'saturation', sat, 'glcm', glcm, 'entropy', ent, 'density', kanten_density);
 end

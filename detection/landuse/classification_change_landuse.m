@@ -1,4 +1,3 @@
-% recognizing transformations when classification is different
 function ver = classification_change_landuse(von, nach)
     if strcmp(von, 'Forest') && strcmp(nach, 'City')
         ver = "Urbanization/Deforestation";
@@ -11,12 +10,16 @@ function ver = classification_change_landuse(von, nach)
     elseif strcmp(von, 'Glacier or Snow') && strcmp(nach, 'Desert')
         ver = "Melt of glacier or snow";  
     elseif strcmp(von, 'Ground') && strcmp(nach, 'City')
-        ver = "New Building";
+        ver = "New Building/Urbanization";
     elseif strcmp(von, 'Desert') && strcmp(nach, 'City')
         ver = "New Building/Urbanization";    
     elseif strcmp(von, 'Sea or Waters') && strcmp(nach, 'Ground')
         ver = "Loss of Water";
     elseif strcmp(von, 'Sea or Waters') && strcmp(nach, 'Forest')
+        ver = "Loss of Water";
+    elseif strcmp(von, 'Sea or Waters') && strcmp(nach, 'Desert')
+        ver = "Loss of Water";     
+    elseif strcmp(von, 'Sea or Waters') && strcmp(nach, 'City')
         ver = "Loss of Water";
     elseif strcmp(von, 'Glacier or Snow') && strcmp(nach, 'Ground')
         ver = "Melt of Glacier or Snow";
