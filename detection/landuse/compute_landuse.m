@@ -6,7 +6,7 @@ if numel(alignedImagesRGB) < 2
 end
 
 img1 = alignedImagesRGB{1};
-img2 = alignedImagesRGB{2};
+img2 = alignedImagesRGB{end};
 
 
 % split in small image patches

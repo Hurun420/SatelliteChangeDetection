@@ -10,7 +10,7 @@ function result = compute_speed(imgs, options)
 %
 % Output:
 %   result: Struct containing
-%       - result.mask : array of computed difference masks (N-1 cells)
+%       - result.speed : array of computed difference masks (N-2 cells)
 %       - result.visual_gray: original gray_scale image (or cell array of 
 %           images) with overlay visualization.
 %       - result.visual_rgb: original image (or cell array of images) with
@@ -23,10 +23,14 @@ function result = compute_speed(imgs, options)
 % and maximal speeds registered in the images sequence.
 
     num_imgs = numel(imgs);
+    if num_imgs < 3
+        error('Need at least 3 images to compute speed.');
+    end
+
     % initialize the outputs
-    result.speed = cell(num_imgs-1,1);
-    result.visual_gray = cell(num_imgs-1,1);
-    result.visual_rgb = cell(num_imgs-1,1);
+    result.speed = cell(num_imgs,1);
+    result.visual_gray = cell(num_imgs,1);
+    result.visual_rgb = cell(num_imgs,1);
 
     % constants used in the loop:
     cmap = jet(256);  % or 'hot', 'parula'
@@ -39,50 +43,125 @@ function result = compute_speed(imgs, options)
     max_val = -Inf;
 
     % Iterate through the images
-    % pass 1: find min and max speed values across all frames
+    %% Pass 1: find min and max speed values across all frames
+
+    % First image: use forward difference
+    next = imgs{2};
+    curr = imgs{1};
+
+    % convert to grayscale if needed
+    next = to_gray(next);
+    curr = to_gray(curr);
+
+    mask = (curr > 0) & (next > 0); % only compare where both are non-black
+    speed = zeros(size(curr));
+    speed(mask) =  abs(double(next(mask)) - double(curr(mask)));  % forward diff
+    %speed = abs(double(next) - double(curr));  % forward diff
+    valid_speeds = speed(mask);
+    min_val = min(min_val, min(valid_speeds));
+    max_val = max(max_val, max(valid_speeds));
+
+    % Middle images: central difference
     for i = 2:(num_imgs-1) 
         prev = imgs{i-1};
         next = imgs{i+1};
 
         % convert to grayscale if needed
-        if size(prev,3) == 3 
-            prev = rgb2gray(prev);
-        end
-        if size(next,3) == 3
-            next = rgb2gray(next);
-        end 
-
-        speed = abs(double(next) - double(prev)) / 2;
-        min_val = min(min_val, min(speed(:)));
-        max_val = max(max_val, max(speed(:)));
+        prev = to_gray(prev);
+        next = to_gray(next);
+        
+        mask = (prev > 0) & (next > 0); 
+        speed = zeros(size(next));
+        speed(mask) = abs(double(next(mask))-double(prev(mask)));
+        
+        %speed = abs(double(next) - double(prev)) / 2;
+        valid_speeds = speed(mask);
+        min_val = min(min_val, min(valid_speeds));
+        max_val = max(max_val, max(valid_speeds));
 
     end
 
-    % Pass 2: normalization and visualization 
+    % Last image: backward difference 
+    curr = imgs{num_imgs};
+    prev = imgs{num_imgs-1};
+
+    curr = to_gray(curr);
+    prev = to_gray(prev);
+    
+    mask = (curr > 0) & (prev > 0); 
+    speed = zeros(size(curr));
+    speed(mask) = abs(double(curr(mask))-double(prev(mask)));
+
+    %speed = abs(double(curr) - double(prev));  % backward diff
+    valid_speeds = speed(mask);
+    min_val = min(min_val, min(valid_speeds));
+    max_val = max(max_val, max(valid_speeds));
+
+    %% Pass 2: normalization and visualization 
+
+    % First image: use forward difference
+    next = imgs{2};
+    curr = imgs{1};
+
+    % convert to grayscale if needed
+    next = to_gray(next);
+    if size(curr,3) == 3
+        curr_gray = rgb2gray(curr);
+    else
+        curr_gray = curr;
+    end
+
+    mask = (curr_gray > 0) & (next > 0); % only compare where both are non-black
+    speed = zeros(size(curr_gray));
+    speed(mask) =  abs(double(next(mask)) - double(curr_gray(mask)));  % forward diff
+    %speed = abs(double(next) - double(curr_gray));  % forward diff
+    
+    speed_norm = zeros(size(speed));
+    speed_norm(mask) = (speed(mask) - min_val) / (max_val - min_val); % normalize to [0,1]
+    result.speed{1} = speed_norm; % save for later use
+
+    % visualize as a heat map (different speed = different color)
+    speed_rgb = ind2rgb(uint8(speed_norm * 255), cmap);
+
+    % Blend with original (grayscale or color)
+    base_gray = im2double(repmat(curr_gray, 1, 1, 3));  % grayscale to RGB
+    overlay_gray = (1 - alpha) * base_gray + alpha * speed_rgb;
+    result.visual_gray{1} = overlay_gray;
+
+    if size(curr,3) == 3
+        base_rgb = im2double(curr);  % original RGB
+        overlay_rgb = (1 - alpha) * base_rgb + alpha * speed_rgb;
+        result.visual_rgb{1} = overlay_rgb;
+    else
+        result.visual_rgb{1} = overlay_gray;
+    end
+
+    % Middle images: centeral difference
     for i = 2:(num_imgs-1) % use three images to estimate the rate of change 
         prev = imgs{i-1}; 
         curr = imgs{i};
         next = imgs{i+1};
     
         % convert to grayscale if needed
-        if size(prev,3) == 3 
-            prev = rgb2gray(prev);
-        end
+        prev = to_gray(prev);
         if size(curr,3) == 3
             curr_gray = rgb2gray(curr);
         else 
             curr_gray = curr;
         end 
-        if size(next,3) == 3
-            next = rgb2gray(next);
-        end 
+        next = to_gray(next);
     
         % estimate second derivative
-        %speed = imabsdiff(double(next)-double(prev)) / 2;
-        speed = abs(double(next) - double(prev)) / 2;
+        mask = (prev > 0) & (next > 0); 
+        speed = zeros(size(next));
+        speed(mask) = abs(double(next(mask))-double(prev(mask)));
 
+        %speed = imabsdiff(double(next)-double(prev)) / 2;
+        %speed = abs(double(next) - double(prev)) / 2;
         %speed_norm = mat2gray(speed);  
-        speed_norm = (speed - min_val) / (max_val - min_val); % normalize to [0,1]
+        speed_norm = zeros(size(speed));
+        speed_norm(mask) = (speed(mask) - min_val) / (max_val - min_val); % normalize to [0,1]
+        %speed_norm = (speed(mask) - min_val) / (max_val - min_val); % normalize to [0,1]
 
         %speed_norm = speed_norm > 0.1;
         %speed_norm = bwareaopen(speed_norm, 10); % remove noise
@@ -100,10 +179,49 @@ function result = compute_speed(imgs, options)
             base_rgb = im2double(curr);  % original RGB
             overlay_rgb = (1 - alpha) * base_rgb + alpha * speed_rgb;
             result.visual_rgb{i} = overlay_rgb;
+        else
+            result.visual_rgb{i} = overlay_gray;
         end
 
     end 
+
+    % Last image: backward difference 
+    curr = imgs{num_imgs};
+    prev = imgs{num_imgs-1};
+
+    prev = to_gray(prev);
+    if size(curr,3) == 3
+        curr_gray = rgb2gray(curr);
+    else
+        curr_gray = curr;
+    end
+
+    mask = (curr_gray > 0) & (prev > 0); 
+    speed = zeros(size(curr_gray));
+    speed(mask) = abs(double(curr_gray(mask))-double(prev(mask)));
     
+    %speed = abs(double(curr_gray) - double(prev));  % backward diff
+    %speed_norm = (speed(mask) - min_val) / (max_val - min_val); % normalize to [0,1]
+    speed_norm = zeros(size(speed));
+    speed_norm(mask) = (speed(mask) - min_val) / (max_val - min_val);
+    result.speed{num_imgs} = speed_norm; % save for later use
+
+    % visualize as a heat map (different speed = different color)
+    speed_rgb = ind2rgb(uint8(speed_norm * 255), cmap);
+
+    % Blend with original (grayscale or color)
+    base_gray = im2double(repmat(curr_gray, 1, 1, 3));  % grayscale to RGB
+    overlay_gray = (1 - alpha) * base_gray + alpha * speed_rgb;
+    result.visual_gray{num_imgs} = overlay_gray;
+
+    if size(curr,3) == 3
+        base_rgb = im2double(curr);  % original RGB
+        overlay_rgb = (1 - alpha) * base_rgb + alpha * speed_rgb;
+        result.visual_rgb{num_imgs} = overlay_rgb;
+    else
+        result.visual_rgb{num_imgs} = overlay_gray;
+    end
+
     result.speedrange = [min_val, max_val];
     result.label = 'Relative speed (0–1)';
     % render the legend (for the heatmap)
@@ -111,4 +229,13 @@ function result = compute_speed(imgs, options)
     legend_rgb = ind2rgb(uint8(legend_img*255), jet(256));
     result.legend_img = legend_rgb;
 
+end 
+
+% helper function:
+function img_gray = to_gray(img)
+    if size(img,3) == 3
+        img_gray = rgb2gray(img);
+    else
+        img_gray = img;
+    end
 end 

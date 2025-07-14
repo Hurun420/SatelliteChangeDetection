@@ -22,9 +22,22 @@ function result = compute_absolute(imgs, options)
     % initialize the outputs
     result.mask = cell(num_imgs-1,1);
     result.imgs_gray = cell(num_imgs, 1);
-    result.visual_gray = cell(num_imgs-1,1);
-    result.visual_rgb = cell(num_imgs-1,1);
+    result.visual_gray = cell(num_imgs,1);
+    result.visual_rgb = cell(num_imgs,1);
     % result.data = ?
+
+    % store grayscale and visualizations of first image
+    if size(imgs{1}, 3) == 3
+        result.imgs_gray{1} = im2double(repmat(rgb2gray(imgs{1}), 1,1,3));
+        result.visual_gray{1} = result.imgs_gray{1}; % no visualization 
+            % for the first image
+        result.visual_rgb{1} = imgs{1};  
+    else 
+        result.imgs_gray{1} = im2double(repmat(imgs{1}, 1,1,3));
+        result.visual_gray{1} = result.imgs_gray{1};
+        result.visual_rgb{1} = result.visual_gray{1}; % rgb visualization 
+            % same as grayscale if the original images are grayscale
+    end
     
     % iterate through the images
     for i = 1:num_imgs-1
@@ -42,10 +55,16 @@ function result = compute_absolute(imgs, options)
         else
             img2_gray = img2;
         end 
+
+        % create validity mask: ignore fully black pixels in either images
+        valid_mask = (img1_gray > 0) & (img2_gray > 0);
     
         % Compute the absolute difference
         diff = imabsdiff(img1_gray, img2_gray);
         %diff = abs(double(img1)-double(img2));
+
+        % Apply validity mask (set invalid pixels to zero)
+        diff(~valid_mask) = 0;
     
         % Normalize and threshold
         diff_norm = mat2gray(diff);
@@ -63,31 +82,39 @@ function result = compute_absolute(imgs, options)
         result.mask{i} = mask;
     
         % create red overlay on the grascale image
-        orig_gray = im2double(repmat(img1_gray, 1,1,3));
+        orig_gray = im2double(repmat(img2_gray, 1,1,3));
+        result.imgs_gray{i+1} = orig_gray; % save grayscale image for img2
 
-        result.imgs_gray{i} = orig_gray;
-        if i == num_imgs-1 
-            result.imgs_gray{i+1} = im2double(repmat(img2_gray, 1,1,3));
-        end
+        %if i == num_imgs-1 
+        %    result.imgs_gray{i+1} = im2double(repmat(img2_gray, 1,1,3));
+        %end
 
         overlay_gray = orig_gray;
         overlay_gray(:,:,1) = overlay_gray(:,:,1) + 0.6 * mask; % red
         overlay_gray = min(overlay_gray,1);
-    
-        result.visual_gray{i} = overlay_gray;
+        % save visualization
+        result.visual_gray{i+1} = overlay_gray;
 
-        % RGB overlay
-        if size(img1,3) == 1
-            result.visual_rgb{i} = overlay_gray;
+        % RGB overlay on img2
+        if size(img2,3) == 1
+            result.visual_rgb{i+1} = overlay_gray;
         else
-           orig_rgb = im2double(img1);
+           orig_rgb = im2double(img2);
            rgb_overlay = orig_rgb;
            rgb_overlay(:,:,1) = rgb_overlay(:,:,1) + 0.6 * mask;
            rgb_overlay = min(rgb_overlay,1);
-           result.visual_rgb{i} = rgb_overlay;
+           result.visual_rgb{i+1} = rgb_overlay;
         end
         
     end 
+
+    % Fill last visual_gray and visual_rgb
+    %result.visual_gray{num_imgs} = result.imgs_gray{num_imgs}; 
+    %if size(imgs{num_imgs}, 3) == 3
+    %    result.visual_rgb{num_imgs} = imgs{num_imgs};
+    %else
+    %    result.visual_rgb{num_imgs} = result.imgs_gray{num_imgs};
+    %end
 
 
 end
