@@ -11,7 +11,7 @@ img2 = alignedImagesRGB{2};
 
 % split in small image patches
 [H, W, ~] = size(img1);
-tileSize = floor(H / tileParam);  %%% change nenner in GUI for precision 10 up to 50 maybe 75 %%%
+tileSize = floor(H / tileParam); 
 
 % Loop for tiles
 all_changes = {};
