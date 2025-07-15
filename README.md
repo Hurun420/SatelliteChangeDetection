@@ -72,11 +72,17 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  - An "Analyze" button to run registration and compute change maps
  - A "View" button group to explore results with:
    - View:
-   - Slider：
-   - Time-lapse：
-   - Absolute：
-   - Speed：
-   - Land Use：
+     Displays the sequence of selected earliest and latest images, with support for grayscale or RGB mode.
+   - Slider:
+     Interactive slider to blend between earliest and latest images for direct visual comparison.
+   - Time-lapse:
+     Plays a frame-by-frame animation showing gradual changes over time.
+   - Absolute:
+     Detects and overlays pixel-wise absolute differences between consecutive images.
+   - Speed:
+     Analyzes and visualizes how quickly regions change over time.
+   - Land Use:
+     Classifies detected changes into simplified land use categories based on tiled analysis.
 
  ## How to Run
  1. Launch the App
