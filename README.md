@@ -24,6 +24,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  
  ## Project Structure
  SatelliteChangeDetection/
+ <pre> ```text . ├── main.m ├── app/ │ ├── app1.mlapp │ └── SpeedColor.png ├── preprocessing/ │ ├── brightness_normalization.m │ └── harris_detector.m ├── registration/ │ ├── register_images.m │ └── register_with_SURF.m ├── output/ │ ├── match_figures/ │ └── match_data/ └── README.md ``` </pre>
  
  ## Preprocessing Module
  register_images.m
