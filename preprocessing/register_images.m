@@ -1,4 +1,4 @@
-function [alignedImagesGray, alignedImagesRGB, transformParams] = register_images(folderPath, imageList)
+function [alignedImagesGray, alignedImagesRGB, transformParams,successIndices] = register_images(folderPath, imageList)
 % REGISTER_IMAGES with SURF + RANSAC (with fallback)
 % Registers all images in imageList to the first image as reference using mutual SURF feature matching.
 
@@ -6,6 +6,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
     alignedImagesGray = cell(1, numImages);
     alignedImagesRGB  = cell(1, numImages);
     transformParams   = cell(1, numImages);
+    successIndices    = [];
     
     j = 1;
 
@@ -29,6 +30,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
             alignedImagesRGB{j}  = currRGB;
             transformParams{j}   = affine2d(eye(3));
             j = j + 1;
+            successIndices(end+1) = i;
             continue;
         end
 
@@ -77,12 +79,12 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
             try
                 warning('⚠️ Retrying with more iterations (fallback)...');
                 [tform, inlierIdx] = estimateGeometricTransform2D(matchedCurr, matchedRef, ...
-                    'similarity', 'MaxDistance', 5, 'Confidence', 99.9, 'MaxNumTrials', 50000);
+                    'similarity', 'MaxDistance', 5, 'Confidence', 99.9, 'MaxNumTrials', maxNumTrials);
 
                 R = tform.T(1:2,1:2);
                 scale = sqrt(sum(R(:,1).^2));
                 inlierRatio = numel(inlierIdx) / size(matchedCurr, 1);
-                condBad = inlierRatio < 10 || scale < 0.5 || scale > 1.5 || rcond(R) < 1e-6;
+                condBad = inlierRatio < 0.3 || scale < 0.5 || scale > 1.5 || rcond(R) < 1e-6;
             catch
                 warning('❌ Fallback transform failed for %s.', currName);
                 continue;
@@ -103,6 +105,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
         alignedImagesGray{j} = alignedGray;
         alignedImagesRGB{j}  = alignedRGB;
         transformParams{j}   = tform;
+        successIndices(end+1) = i;
 
         j = j + 1;
     end
