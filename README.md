@@ -17,7 +17,7 @@ The app enables users to:
 The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg/.png format.
 
  ## Requirements
- - MATLAB 2024a or compatible version
+ - MATLAB 2024a or compatible version (2024a-2025a tested)
  #### Required Toolboxes:
   - Image Processing Toolbox
   - Computer Vision Toolbox
@@ -80,7 +80,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
    - Absolute:
      Detects and overlays pixel-wise absolute differences between consecutive images.
    - Speed:
-     Analyzes and visualizes how quickly regions change over time.
+     Analyzes and visualizes how quickly regions change over time using a central difference approximation method.
    - Land Use:
      Classifies detected changes into simplified land use categories based on tiled analysis.
 
