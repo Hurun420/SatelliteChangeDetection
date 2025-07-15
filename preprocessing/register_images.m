@@ -6,7 +6,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
     alignedImagesGray = cell(1, numImages);
     alignedImagesRGB  = cell(1, numImages);
     transformParams   = cell(1, numImages);
-
+    
     j = 1;
 
     for i = 1:numImages
@@ -81,7 +81,8 @@ function [alignedImagesGray, alignedImagesRGB, transformParams] = register_image
 
                 R = tform.T(1:2,1:2);
                 scale = sqrt(sum(R(:,1).^2));
-                condBad = numel(inlierIdx) < 10 || scale < 0.7 || scale > 1.3 || rcond(R) < 1e-6;
+                inlierRatio = numel(inlierIdx) / size(matchedCurr, 1);
+                condBad = inlierRatio < 10 || scale < 0.5 || scale > 1.5 || rcond(R) < 1e-6;
             catch
                 warning('❌ Fallback transform failed for %s.', currName);
                 continue;
