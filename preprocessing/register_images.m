@@ -1,4 +1,4 @@
-function [alignedImagesGray, alignedImagesRGB, transformParams,successIndices] = register_images(folderPath, imageList)
+function [alignedImagesGray, alignedImagesRGB, transformParams, successIndices] = register_images(folderPath, imageList)
 % REGISTER_IMAGES with SURF + RANSAC (with fallback)
 % Registers all images in imageList to the first image as reference using mutual SURF feature matching.
 
