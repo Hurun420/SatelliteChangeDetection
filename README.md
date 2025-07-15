@@ -23,7 +23,6 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
   - Computer Vision Toolbox
  
  ## Project Structure
- SatelliteChangeDetection/
  ├── .git
  ├── detection
  │   ├── classification_change_landuse.m
