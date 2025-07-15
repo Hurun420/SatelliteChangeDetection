@@ -23,30 +23,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
   - Computer Vision Toolbox
  
  ## Project Structure
- ├── .git
- ├── detection
- │   ├── classification_change_landuse.m
- │   ├── classification_landuse.m
- │   ├── compute_landuse.m
- │   ├── compute_absolute.m
- │   ├── compute_speed.m
- │   ├── detect_changes.m
- ├── docs
- ├── gui
- │   ├── app1.mlapp
- │   ├── SpeedColor.png
- ├── preprocessing
- │   ├── register_images.m
- ├── testImage
- │   └── Brazilian Rainforest
- │   ├── Columbia Glacier
- │   ├── Dubai
- │   ├── Frauenkirche
- │   ├── Kuwait
- │   ├── Wiesn
- ├── main.m
- ├── README.md
- └── utils
+ SatelliteChangeDetection/
  
  ## Preprocessing Module
  register_images.m
