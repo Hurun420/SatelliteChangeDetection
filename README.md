@@ -16,15 +16,15 @@ The app enables users to:
 The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg format.
 
  ### Requirements
- - MATLAB 2025a or compatible version
+ - MATLAB 2024a or compatible version
  - Required Toolboxes:
   - Image Processing Toolbox
   - Computer Vision Toolbox
  
- #### Project Structure
+ ### Project Structure
  SatelliteChangeDetection/
  
- ##### Preprocessing Module
+ #### Preprocessing Module
  register_images.m
  This function automatically aligns all images in a selected folder to the first image using a SURF feature-based approach and similarity transformation. It robustly handles:
  - Rotation and translation differences
@@ -40,7 +40,19 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  - transformParams:   cell array of geometric transform objects
  - successIndices:    indices of imageList that were successfully aligned
 
- ###### How to Run
+ #### GUI Module
+ This is the main graphical user interface built with MATLAB App Designer. It provides:
+ - A folder browser to select satellite image folders
+ - An "Analyze" button to run registration and compute change maps
+ - A "View" button group to explore results with:
+   - View:
+   - Slider：
+   - Time-lapse：
+   - Absolute：
+   - Speed：
+   - Land Use：
+
+ #### How to Run
  1. Launch the App
     Run main.m to open the GUI.
  2. Load Images
@@ -50,7 +62,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  4. Visualize
     After analysis, you can explore different visualization modes (View, Slider, Time-lapse, Absolute, Speed, Land Use).
 
- ###### Notes
+ ## Notes
  - Only official MathWorks toolboxes are used.
  - Tested for datasets with varying lighting, scale, and viewpoint.
  - The app can be tested using provided data or new folders following naming conventions (e.g., 2008_04.jpg, 2018.jpg). 
