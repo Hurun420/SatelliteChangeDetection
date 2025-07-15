@@ -18,7 +18,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
 
  ## Requirements
  - MATLAB 2024a or compatible version
- - Required Toolboxes:
+ ### Required Toolboxes:
   - Image Processing Toolbox
   - Computer Vision Toolbox
  
