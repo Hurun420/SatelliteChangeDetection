@@ -14,7 +14,7 @@ The app enables users to:
   - Absolute Change Detection
   - Speed Analysis
   - Land Use Classification
-The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg format.
+The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg/.png format.
 
  ## Requirements
  - MATLAB 2024a or compatible version
@@ -88,7 +88,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  1. Launch the App
     Run main.m to open the GUI.
  2. Load Images
-    Use the Browse button to select a folder containing .jpg images named like YYYY_MM.jpg. For example, Testimages-Frauenkirche.
+    Use the Browse button to select a folder containing .jpg/.png images named like YYYY_MM.jpg. For example, Testimages-Frauenkirche.
  3. Analyze
     Click the Analyze button. Images will be aligned using the preprocessing module.
  4. Visualize
