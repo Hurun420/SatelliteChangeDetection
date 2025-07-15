@@ -32,13 +32,13 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  - Poor match filtering (scale/rcond rejection)
  - Optional max trial customization for RANSAC
  Inputs:
- - folderPath: string, path to the folder containing the images
- - imageList: Cell array of filenames (e.g., {'2020_01.jpg', '2023_04.jpg'})
+  - folderPath: string, path to the folder containing the images
+  - imageList: Cell array of filenames (e.g., {'2020_01.jpg', '2023_04.jpg'})
  Outputs:
- - alignedImagesGray: cell array of aligned grayscale images
- - alignedImagesRGB:  cell array of aligned RGB images
- - transformParams:   cell array of geometric transform objects
- - successIndices:    indices of imageList that were successfully aligned
+  - alignedImagesGray: cell array of aligned grayscale images
+  - alignedImagesRGB:  cell array of aligned RGB images
+  - transformParams:   cell array of geometric transform objects
+  - successIndices:    indices of imageList that were successfully aligned
 
  ## GUI Module
  This is the main graphical user interface built with MATLAB App Designer. It provides:
