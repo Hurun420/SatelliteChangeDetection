@@ -17,7 +17,7 @@ The app enables users to:
 The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg/.png format.
 
  ## Requirements
- - MATLAB 2024a or compatible version (2024a-2025a tested)
+ - MATLAB R2024a or compatible version (R2024a-R2025a tested)
  #### Required Toolboxes:
   - Image Processing Toolbox
   - Computer Vision Toolbox
