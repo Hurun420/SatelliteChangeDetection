@@ -15,16 +15,16 @@ The app enables users to:
   - Time-lapse Animation
 The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg format.
 
- ### Requirements
+ ## Requirements
  - MATLAB 2024a or compatible version
  - Required Toolboxes:
   - Image Processing Toolbox
   - Computer Vision Toolbox
  
- ### Project Structure
+ ## Project Structure
  SatelliteChangeDetection/
  
- #### Preprocessing Module
+ ## Preprocessing Module
  register_images.m
  This function automatically aligns all images in a selected folder to the first image using a SURF feature-based approach and similarity transformation. It robustly handles:
  - Rotation and translation differences
@@ -40,7 +40,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
  - transformParams:   cell array of geometric transform objects
  - successIndices:    indices of imageList that were successfully aligned
 
- #### GUI Module
+ ## GUI Module
  This is the main graphical user interface built with MATLAB App Designer. It provides:
  - A folder browser to select satellite image folders
  - An "Analyze" button to run registration and compute change maps
@@ -52,7 +52,7 @@ The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is 
    - Speed：
    - Land Use：
 
- #### How to Run
+ ## How to Run
  1. Launch the App
     Run main.m to open the GUI.
  2. Load Images
