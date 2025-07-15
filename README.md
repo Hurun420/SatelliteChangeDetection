@@ -13,3 +13,46 @@ The app enables users to:
   - Slider Comparison
   - Overlay Blend
   - Time-lapse Animation
+The project meets the SoSe 2025 Computer Vision Challenge rerequirements and is compatible with unknown satellite image datasets in .jpg format.
+
+ ### Requirements
+ - MATLAB 2025a or compatible version
+ - Required Toolboxes:
+  - Image Processing Toolbox
+  - Computer Vision Toolbox
+ 
+ #### Project Structure
+ SatelliteChangeDetection/
+ 
+ ##### Preprocessing Module
+ register_images.m
+ This function automatically aligns all images in a selected folder to the first image using a SURF feature-based approach and similarity transformation. It robustly handles:
+ - Rotation and translation differences
+ - Brightness and exposure differences
+ - Poor match filtering (scale/rcond rejection)
+ - Optional max trial customization for RANSAC
+ Inputs:
+ - folderPath: string, path to the folder containing the images
+ - imageList: Cell array of filenames (e.g., {'2020_01.jpg', '2023_04.jpg'})
+ Outputs:
+ - alignedImagesGray: cell array of aligned grayscale images
+ - alignedImagesRGB:  cell array of aligned RGB images
+ - transformParams:   cell array of geometric transform objects
+ - successIndices:    indices of imageList that were successfully aligned
+
+ ###### How to Run
+ 1. Launch the App
+    Run main.m to open the GUI.
+ 2. Load Images
+    Use the Browse button to select a folder containing .jpg images named like YYYY_MM.jpg. For example, Testimages-Frauenkirche.
+ 3. Analyze
+    Click the Analyze button. Images will be aligned using the preprocessing module.
+ 4. Visualize
+    After analysis, you can explore different visualization modes (View, Slider, Time-lapse, Absolute, Speed, Land Use).
+
+ ###### Notes
+ - Only official MathWorks toolboxes are used.
+ - Tested for datasets with varying lighting, scale, and viewpoint.
+ - The app can be tested using provided data or new folders following naming conventions (e.g., 2008_04.jpg, 2018.jpg). 
+ 
+ 
