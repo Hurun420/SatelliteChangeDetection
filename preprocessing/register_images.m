@@ -83,8 +83,7 @@ function [alignedImagesGray, alignedImagesRGB, transformParams, successIndices] 
 
                 R = tform.T(1:2,1:2);
                 scale = sqrt(sum(R(:,1).^2));
-                inlierRatio = numel(inlierIdx) / size(matchedCurr, 1);
-                condBad = inlierRatio < 0.3 || scale < 0.5 || scale > 1.5 || rcond(R) < 1e-6;
+                condBad = numel(inlierIdx) < 10 || scale < 0.5 || scale > 1.5 || rcond(R) < 1e-6;
             catch
                 warning('❌ Fallback transform failed for %s.', currName);
                 continue;
